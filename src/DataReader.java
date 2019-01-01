@@ -1,10 +1,11 @@
-import java.io.*;
-import java.text.SimpleDateFormat;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-
-import static java.lang.reflect.Array.getLength;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataReader {
 
@@ -21,55 +22,56 @@ public class DataReader {
     private HashMap<String, Data> hashMap;
     private ArrayList<String> users;
     private String date, user, message;
-
+    private final Pattern messagePattern = Pattern.compile("([12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]), ([01]?[0-9]|2[0-3]):[0-5][0-9]) (-) (.*)(:) (.*)");
+                    //group 1 = date; group 6 = user; group 8 = message
+    private final Pattern singleMessagePattern = Pattern.compile(".*");
     public DataReader(){
         this.users = new ArrayList<>(30);
-        hashMap = new HashMap<>(100);
+        hashMap = new HashMap<>(7919);
     }
 
 
     public void readFile(String fileName) {
         File file = new File(fileName);
         BufferedReader reader;
+        Matcher matcher;
 
         try {
             reader = new BufferedReader(new FileReader(file));
             String line = reader.readLine();
-            System.out.println("line1: "+ line);
-            line = reader.readLine();
-            System.out.println("line 2: " + line);
 
             if (line == null) {
                 System.out.println("Error: File is EMPTY");
             }
 
+            int counter = 0;
             while (line != null) {
-                String[] part1 = line.split(" - "); // part1[0] = date, part1[1] = name : date
+                matcher = messagePattern.matcher(line);
+                if (matcher.matches()) {
+                    date = matcher.group(1);
+                    user = matcher.group(6);
+                    message = matcher.group(8);
 
-                if (getLength(part1)<1){ // the message is on single line that is for the latest user above
-                    message = part1[0];
-                    Data singleMessage = new Data(date, message);
-                    hashMap.put(user, singleMessage);
-                    line = reader.readLine();
+                    Data data = new Data(date, message);
+                    hashMap.put(user, data);
+
+                    if (verifyUser(user) == -1)
+                        users.add(user);
+                } else { //line is a single message from the previous user
+                    matcher = singleMessagePattern.matcher(line);
+                    if (matcher.matches()){
+                        message = matcher.group(0);
+                        Data data = new Data(date, message);
+                        hashMap.put(user, data);
+                    }
                 }
 
-                String[] part2 = part1[1].split(": ");// part2[0] = name, part2[1] = message
-
-                date = part1[0];
-                user = part2[0];
-                message = part2[1];
-
-                System.out.println(hashMap);
-                System.out.println(users);
-
-                Data data = new Data (date, message);
-                if (verifyUser(user) == -1)
-                    users.add(user);
-                hashMap.put(user, data);
-
-
                 line = reader.readLine();
+                counter++;
             }
+
+            //System.out.println(users);
+            System.out.println(hashMap.toString());
 
         } catch (IOException e) {
             e.printStackTrace();

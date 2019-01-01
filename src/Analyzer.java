@@ -10,7 +10,7 @@ public class Analyzer {
         String fileName = in.next();
 
         System.out.println("Reading file...");
-        dataReader.readFile(fileName);
+        dataReader.readFile("/Users/omaralmo/Documents/Projects/chat_demo_copy.txt");
         System.out.println("Finsihed reading file.");
     }
 
